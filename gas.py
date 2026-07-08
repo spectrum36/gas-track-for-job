@@ -4,7 +4,7 @@ import os
 import getpass
 
 # whether or not to use ntfy's public server, if not use ntfyUrl
-pub = False
+pub = True
 ntfyUrl = "http://rpi-node:8070/gasPrice"
 
 uname = getpass.getuser()
