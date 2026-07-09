@@ -66,11 +66,9 @@ storedata = requests.get(f"https://api.kwiktrip.com/api/location/store/informati
 
 fuel = storedata['fuel']
     
-prices = [fuel[0]['type'], fuel[0]['currentPrice']], [fuel[4]['type'], fuel[4]['currentPrice']]
+prices = [fuel[0]['currentPrice'], fuel[4]['currentPrice']]
 
-def priceCheck (priceFn, timeFn, price, name):
-    lowPrice = price[1]
-
+def priceCheck (priceFn, timeFn, lowPrice, name):
     # grab current price from file and conver to float
     f1 = open(priceFn, "r")
     currPrice = f1.read()
@@ -104,8 +102,6 @@ def priceCheck (priceFn, timeFn, price, name):
             f2.close()
             notify(name + " price raised to $" + str(lowPrice) + ", wait 24 hours")
 
-unlead = prices[0][0].partition("ED 87")[0]
-priceCheck(unleadPriceFn, unleadTimeFn, prices[0], unlead.lower())
+priceCheck(unleadPriceFn, unleadTimeFn, prices[0], "unleaded")
 
-diesel = prices[1][0].partition(" #")[0]
-priceCheck(dieselPriceFn, dieselTimeFn, prices[1], diesel.lower())
+priceCheck(dieselPriceFn, dieselTimeFn, prices[1], "diesel")
