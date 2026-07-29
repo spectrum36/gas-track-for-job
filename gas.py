@@ -2,10 +2,12 @@ import requests
 import time
 import os
 import getpass
+from dotenv import load_dotenv
+
+load_dotenv()
 
 # whether or not to use ntfy's public server, if not use ntfyUrl
 pub = True 
-ntfyUrl = "http://rpi-node:8070/gasPrice"
 
 #file names
 uname = getpass.getuser()
@@ -50,19 +52,29 @@ fileCheck(unleadPriceFn)
 fileCheck(dieselPriceFn)
 
 # send notification
-def notify (msg):
-    if pub == True:
-        requests.post("https://ntfy.sh/gasPrice", data=msg.encode(encoding='utf-8'))
+def notify (msg, x):
+    if x == True:
+        requests.post(os.getenv("PUB_URL"), data=msg.encode(encoding='utf-8'))
     else:
-        requests.post(ntfyUrl, data=msg.encode(encoding='utf-8'))
+        requests.post(os.getenv("NTFY_URL"), data=msg.encode(encoding='utf-8'))
 
 # grab store
-stores = requests.get("https://api.kwiktrip.com/api/stores/nearby", params=params).json()["stores"]
+req = requests.get("https://api.kwiktrip.com/api/stores/nearby", params=params)
+
+if req.status_code != 200:
+    notify(f"gas-shit stores request failed, status code:{req.status_code}", False)
+
+stores = req.json()["stores"]
 
 # grab gas prices from store
 store = stores[0]['id']
 
-storedata = requests.get(f"https://api.kwiktrip.com/api/location/store/information/{store}").json()
+req = requests.get(f"https://api.kwiktrip.com/api/location/store/information/{store}")
+
+if req.status_code != 200:
+    notify(f"gas-shit store data request failed, status code:{req.status_code}", False)
+
+storedata = req.json()
 
 fuel = storedata['fuel']
     
@@ -81,7 +93,7 @@ def priceCheck (priceFn, timeFn, lowPrice, name):
         f1 = open(priceFn, "w")
         f1.write(str(lowPrice))
         f1.close()
-        notify("lower " + name + " price: $" + str(lowPrice))
+        notify(f"lower {name} price: ${str(lowPrice)}", pub)
         if os.path.exists(timeFn):
             os.remove(timeFn)
     elif lowPrice > currPrice:
@@ -91,7 +103,7 @@ def priceCheck (priceFn, timeFn, lowPrice, name):
             f2.close()
             raiseTime = float(raiseTime)
             if raiseTime < time.time():
-                notify("raise " + name + " price: $" + str(lowPrice))
+                notify(f"raise {name} price: ${str(lowPrice)}", pub)
                 f1 = open(priceFn, "w")
                 f1.write(str(lowPrice))
                 f1.close()
@@ -100,7 +112,7 @@ def priceCheck (priceFn, timeFn, lowPrice, name):
             f2 = open(timeFn, "w")
             f2.write(str(time.time() + raiseFuture))
             f2.close()
-            notify(name + " price raised to $" + str(lowPrice) + ", wait 24 hours")
+            notify(f"{name} price raised to ${str(lowPrice)}, wait 24 hours", pub)
 
 priceCheck(unleadPriceFn, unleadTimeFn, prices[0], "unleaded")
 
